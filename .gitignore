@@ -4,3 +4,7 @@ package-lock.json
 /artifacts
 /cache
 /deployments
+
+# python testing stuffs
+.python-version
+**/__pycache__

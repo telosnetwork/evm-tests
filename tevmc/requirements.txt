@@ -1,0 +1,5 @@
+pytest
+
+asks
+py-leap@git+https://github.com/guilledk/py-leap.git@v0.1a13
+tevmc@git+https://github.com/telosnetwork/telos-evm-docker.git@bye_hyperion

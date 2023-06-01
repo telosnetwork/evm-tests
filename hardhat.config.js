@@ -39,5 +39,9 @@ module.exports = {
       wsUrl: "ws://127.0.0.1:8545",
       accounts: ["0x26e86e45f6fc45ec6e2ecd128cec80fa1d1505e5507dcd2ae58c3130a7a97b48"]
     },
+    tevmc: {
+      url: "http://127.0.0.1:7000/evm",
+      accounts: ['0x87ef69a835f8cd0c44ab99b7609a20b2ca7f1c8470af4f0e5b44db927d542084'],
+    }
   },
 };

@@ -1,4 +1,5 @@
 pytest
+pdbpp
 
 asks
 py-leap@git+https://github.com/guilledk/py-leap.git@v0.1a13

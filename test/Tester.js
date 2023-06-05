@@ -24,15 +24,16 @@ describe("Token contract", function () {
                 trxResponse = await testerInstance.testCallRevert({gasLimit: 80000});
                 trxHash = trxResponse.hash
             } catch (e) {
-                console.dir(e)
+                // console.dir(e)
                 reverted = true;
                 trxHash = e.data.txHash
             }
-            console.log(`Trxhash: ${trxHash}`)
+            // console.log(`Trxhash: ${trxHash}`)
 
             expect(reverted, "Transaction should have reverted");
 
             const traceTransactionResponse = await hre.ethers.provider.send('trace_transaction', [trxHash]);
+            console.dir(traceTransactionResponse);
             expect(traceTransactionResponse.length)
                 .to.equal(2, "Should have 2 traces, one for the root trx and one for the reverted internal call");
 
@@ -46,7 +47,7 @@ describe("Token contract", function () {
 
         });
 
-        xit("Should transfer value via internal function", async function() {
+        it("Should transfer value via internal function", async function() {
             const valueToSend = hre.ethers.utils.parseEther("0.000001");
             const trxResponse = await testerInstance.testValueTransfer({value: valueToSend});
             const traceTransactionResponse = await hre.ethers.provider.send('trace_transaction', [trxResponse.hash]);

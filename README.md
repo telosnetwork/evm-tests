@@ -36,7 +36,6 @@ source venv/bin/activate
 pip install -r tevmc/requirements.txt
 
 # run deploy script, will wait for user input for teardown
-# check out the file at tevmc/test_deploy.py for more info
 pytest tevmc/test_deploy.py
 
 # on another terminal run js evm tests

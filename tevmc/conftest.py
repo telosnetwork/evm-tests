@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import os
 import sys
 
 import pytest
@@ -8,8 +7,10 @@ import docker
 import logging
 import requests
 
+from shutil import copyfile
 from contextlib import contextmanager
 
+from leap.sugar import docker_move_into
 from tevmc import TEVMController
 from tevmc.config import (
     local, testnet, mainnet,
@@ -45,10 +46,22 @@ def bootstrap_test_stack(
     chain_name = config['telos-evm-rpc']['elastic_prefix']
 
     tmp_path = tmp_path_factory.getbasetemp() / chain_name
-    manifest = build_docker_manifest(config)
+    build_docker_manifest(config)
 
     tmp_path.mkdir(parents=True, exist_ok=True)
     touch_node_dir(tmp_path, config, 'tevmc.json')
+
+    # install custom .wasm for subst
+    copyfile(
+        'tevmc/contracts/eosio.evm/eosio.evm.wasm',
+        tmp_path / 'docker/leap/contracts/eosio.evm/regular/regular.wasm'
+    )
+
+    copyfile(
+        'tevmc/contracts/eosio.evm/eosio.evm.abi',
+        tmp_path / 'docker/leap/contracts/eosio.evm/regular/regular.abi'
+    )
+
     perform_docker_build(
         tmp_path, config, logging)
 
@@ -66,8 +79,6 @@ def bootstrap_test_stack(
 
     except BaseException:
         if containers:
-            pid = os.getpid()
-
             client = get_docker_client(timeout=10)
 
             for val in containers:

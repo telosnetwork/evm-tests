@@ -10,10 +10,9 @@ import requests
 from shutil import copyfile
 from contextlib import contextmanager
 
-from leap.sugar import docker_move_into
 from tevmc import TEVMController
 from tevmc.config import (
-    local, testnet, mainnet,
+    local,
     build_docker_manifest,
     randomize_conf_ports,
     randomize_conf_creds,
@@ -31,7 +30,7 @@ TEST_SERVICES = ['redis', 'elastic', 'kibana', 'nodeos', 'indexer', 'rpc']
 @contextmanager
 def bootstrap_test_stack(
     tmp_path_factory, config,
-    randomize=False, services=TEST_SERVICES,
+    randomize=True, services=TEST_SERVICES,
     **kwargs
 ):
     if randomize:

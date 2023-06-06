@@ -33,14 +33,13 @@ describe("Token contract", function () {
             expect(reverted, "Transaction should have reverted");
 
             const traceTransactionResponse = await hre.ethers.provider.send('trace_transaction', [trxHash]);
-            console.dir(traceTransactionResponse);
+            // console.dir(traceTransactionResponse);
             expect(traceTransactionResponse.length)
                 .to.equal(2, "Should have 2 traces, one for the root trx and one for the reverted internal call");
 
             // TODO: check the revert message if included in ethereum response, otherwise just compare the call output which should decode to the revert message
             //  basically just compare trace_transaction JSON RPC response from Telos EVM to an ethereum archive node response
 
-            console.dir(traceTransactionResponse);
             // TODO: put correct value here for status
             expect(traceTransactionResponse[1].status)
                 .to.equal("0x0", "Second trace should represent the revert with status === 0")

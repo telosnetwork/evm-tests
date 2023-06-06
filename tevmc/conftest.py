@@ -104,5 +104,12 @@ def bootstrap_test_stack(
 @pytest.fixture(scope='module')
 def tevm_node(tmp_path_factory):
     with bootstrap_test_stack(
+        tmp_path_factory, local.default_config, randomize=False) as tevmc:
+        yield tevmc
+
+
+@pytest.fixture(scope='module')
+def tevm_node_random(tmp_path_factory):
+    with bootstrap_test_stack(
         tmp_path_factory, local.default_config) as tevmc:
         yield tevmc

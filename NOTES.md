@@ -1,3 +1,23 @@
+### Testing a local erigon node/network
+
+Per instructions [here](https://github.com/ledgerwatch/erigon/blob/devel/DEV_CHAIN.md)
+
+Build erigon if not built aleady, this assumes you want to do all of this from a directory named `/home/bob`
+```bash
+cd /home/bob
+git clone --recurse-submodules -j8 https://github.com/ledgerwatch/erigon.git
+cd erigon
+make erigon
+make rpcdaemon
+```
+
+Now run the node, this will create a directory named `/home/bob/erigon/dev` wherever you run it from
+`/home/bob/erigon/build/bin/erigon --datadir=/home/bob/erigon/dev --chain=dev --private.api.addr=localhost:9090 --mine --http.api=eth,erigon,web3,net,debug,trace,txpool,parity,admin --http.corsdomain="*" --dev.period=1 --ws`
+
+This will launch a local development node listening on port 8545 for both `http` and `ws`
+
+To reset the network, just `rm -rf /home/bob/erigon/dev`
+
 ### Testing on sepolia
 Example transactions from both Tester methods are below, you can click "more" on the right, select parity trace and then select raw to see the data below.
 

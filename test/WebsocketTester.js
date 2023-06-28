@@ -12,8 +12,6 @@ describe("Websocket testing", function () {
     })
     describe(":: Test", function () {
         it("Should get 2 logs from websocket subscription", async function () {
-            const url = hre.network.config.url;
-            //const wsProvider = new hre.ethers.providers.WebSocketProvider(url.replace('http', 'ws'));
             const wsProvider = new hre.ethers.providers.WebSocketProvider(hre.network.config.wsUrl);
             const wsContract = emitterInstance.connect(wsProvider);
 
@@ -40,7 +38,7 @@ describe("Websocket testing", function () {
             })
 
             wsContract.on(wsContract.filters.Second(null), (value, event) => {
-                expect(event.logIndex).to.equal(1, "Second event should have logIndex of 0");
+                expect(event.logIndex).to.equal(1, "Second event should have logIndex of 1");
                 secondEventValue = parseInt(event.data, 16);
             })
 

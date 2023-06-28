@@ -1,6 +1,7 @@
 {
   "scripts": {
     "test:localhost": "hardhat  --network localhost test",
+    "test:localerigon": "hardhat --network localerigon test",
     "test": "hardhat test"
   },
   "dependencies": {

@@ -62,7 +62,7 @@ def bootstrap_test_stack(
     )
 
     perform_docker_build(
-        tmp_path, config, logging)
+        tmp_path, config, logging, services)
 
     containers = None
 

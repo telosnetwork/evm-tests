@@ -12,3 +12,33 @@ Commands used below work on recent Linux or Windows versions but have not been v
 
 ## TEST
 - Use `npx hardhat test` to build and launch the tests
+
+
+## OPTIONAL:
+### Run local evm node & autodeploy contract at tevmc/contracts/eosio.evm
+
+Requirements:
+
+- Docker
+- Python 3.9+ (probably works with 3.7+ but haven't tested in a while)
+- Linux (for now)
+
+Quickstart:
+
+```
+# from repo root:
+
+# create virtualenv and activate
+python3 -m venv venv
+source venv/bin/activate
+
+# install requirements
+pip install -r tevmc/requirements.txt
+
+# run deploy script, will wait for user input for teardown
+pytest tevmc/test_deploy.py
+
+# on another terminal run js evm tests
+npx hardhat test --network tevmc
+
+```

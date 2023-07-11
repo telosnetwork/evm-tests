@@ -24,29 +24,29 @@ describe("Token contract", function () {
                 trxResponse = await testerInstance.testCallRevert({gasLimit: 80000});
                 trxHash = trxResponse.hash
             } catch (e) {
-                console.dir(e)
+                // console.dir(e)
                 reverted = true;
                 trxHash = e.data.txHash
             }
-            console.log(`Trxhash: ${trxHash}`)
+            // console.log(`Trxhash: ${trxHash}`)
 
             expect(reverted, "Transaction should have reverted");
 
             const traceTransactionResponse = await hre.ethers.provider.send('trace_transaction', [trxHash]);
+            // console.dir(traceTransactionResponse);
             expect(traceTransactionResponse.length)
                 .to.equal(2, "Should have 2 traces, one for the root trx and one for the reverted internal call");
 
             // TODO: check the revert message if included in ethereum response, otherwise just compare the call output which should decode to the revert message
             //  basically just compare trace_transaction JSON RPC response from Telos EVM to an ethereum archive node response
 
-            console.dir(traceTransactionResponse);
             // TODO: put correct value here for status
             expect(traceTransactionResponse[1].status)
                 .to.equal("0x0", "Second trace should represent the revert with status === 0")
 
         });
 
-        xit("Should transfer value via internal function", async function() {
+        it("Should transfer value via internal function", async function() {
             const valueToSend = hre.ethers.utils.parseEther("0.000001");
             const trxResponse = await testerInstance.testValueTransfer({value: valueToSend});
             const traceTransactionResponse = await hre.ethers.provider.send('trace_transaction', [trxResponse.hash]);

@@ -10,10 +10,16 @@ module.exports = async ({getNamedAccounts, deployments}) => {
     from: deployer
   });
 
+  console.log("Deploying Tester");
   const tester = await deploy('Tester', {
     from: deployer,
     args: [reverter.address]
   })
 
+  console.log("Deploying PrecompileTester");
+  const precompile_tester = await deploy('StandardPrecompiles', {
+    from: deployer
+  });
+
 };
-module.exports.tags = ['Tester'];
+module.exports.tags = ['Tester', 'StandardPrecompiles'];

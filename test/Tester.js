@@ -59,6 +59,25 @@ describe("Token contract", function () {
             expect(transferCallAction.from).to.equal(testerInstance.address, "call transfer should be from contractAddress");
             expect(transferCallAction.to).to.equal(trxResponse.from, "call transfer should be to sender");
             expect(transferCallAction.value).to.equal(valueToSend.toHexString(), "call transfer value should be same as the value sent to contract");
-        })
+        });
     });
+});
+
+describe("StandardPrecompiles", function() {
+  it("should successfully test all precompiles", async function() {
+    // Get the Contract Factory
+    const StandardPrecompiles = await hre.ethers.getContractFactory("StandardPrecompiles");
+
+    // Deploy the contract
+    const precompiles = await StandardPrecompiles.deploy();
+
+    // Wait for the contract to be mined
+    await precompiles.deployed();
+
+    // Call the test_all function
+    const result = await precompiles.test_all();
+
+    // Check the result
+    expect(result).to.equal(true);
+  });
 });

@@ -50,16 +50,43 @@ def bootstrap_test_stack(
     tmp_path.mkdir(parents=True, exist_ok=True)
     touch_node_dir(tmp_path, config, 'tevmc.json')
 
-    # install custom .wasm for subst
+    # install receiptless wasm
     copyfile(
-        'tevmc/contracts/eosio.evm/eosio.evm.wasm',
+        'tevmc/contracts/eosio.evm-receiptless/eosio.evm.wasm',
+        tmp_path / 'docker/leap/contracts/eosio.evm/receiptless/receiptless.wasm'
+    )
+
+    copyfile(
+        'tevmc/contracts/eosio.evm-receiptless/eosio.evm.abi',
+        tmp_path / 'docker/leap/contracts/eosio.evm/receiptless/receiptless.abi'
+    )
+
+    # install subst wasm
+    copyfile(
+        'tevmc/contracts/eosio.evm-legacy/eosio.evm.wasm',
         tmp_path / 'docker/leap/contracts/eosio.evm/regular/regular.wasm'
     )
 
     copyfile(
-        'tevmc/contracts/eosio.evm/eosio.evm.abi',
+        'tevmc/contracts/eosio.evm-legacy/eosio.evm.abi',
         tmp_path / 'docker/leap/contracts/eosio.evm/regular/regular.abi'
     )
+
+    (tmp_path /
+        'docker/leap/contracts/eosio.evm/upgradable').mkdir(
+            parents=True, exist_ok=True)
+
+    # install upgradable wasm
+    copyfile(
+        'tevmc/contracts/eosio.evm-upgradable/eosio.evm.wasm',
+        tmp_path / 'docker/leap/contracts/eosio.evm/upgradable/upgradable.wasm'
+    )
+
+    copyfile(
+        'tevmc/contracts/eosio.evm-upgradable/eosio.evm.abi',
+        tmp_path / 'docker/leap/contracts/eosio.evm/upgradable/upgradable.abi'
+    )
+
 
     perform_docker_build(
         tmp_path, config, logging, services)

@@ -5,7 +5,7 @@ const hre = require("hardhat");
 
 describe("Token contract", function () {
     let testerInstance;
-    beforeEach(async () => {
+    before(async () => {
         const Reverter = await hre.ethers.getContractFactory("Reverter");
         const reverter = await Reverter.deploy();
         console.log(`Deployed Reverter to ${reverter.address}`);
@@ -32,27 +32,24 @@ describe("Token contract", function () {
 
             expect(reverted, "Transaction should have reverted");
 
-            const traceTransactionResponse = await hre.ethers.provider.send('trace_transaction', [trxHash]);
-            // console.dir(traceTransactionResponse);
-            expect(traceTransactionResponse.length)
-                .to.equal(2, "Should have 2 traces, one for the root trx and one for the reverted internal call");
+            const traceTransactionResponse = await testerInstance.provider.send('trace_transaction', [trxHash]);
+            console.dir(traceTransactionResponse);
+            expect(traceTransactionResponse?.length).to.equal(2, "Should have 2 traces, one for the root trx and one for the reverted internal call");
 
             // TODO: check the revert message if included in ethereum response, otherwise just compare the call output which should decode to the revert message
             //  basically just compare trace_transaction JSON RPC response from Telos EVM to an ethereum archive node response
 
             // TODO: put correct value here for status
-            expect(traceTransactionResponse[1].status)
-                .to.equal("0x0", "Second trace should represent the revert with status === 0")
+            expect(traceTransactionResponse[1].status).to.equal("0x0", "Second trace should represent the revert with status === 0")
 
         });
 
         it("Should transfer value via internal function", async function() {
             const valueToSend = hre.ethers.utils.parseEther("0.000001");
             const trxResponse = await testerInstance.testValueTransfer({value: valueToSend});
-            const traceTransactionResponse = await hre.ethers.provider.send('trace_transaction', [trxResponse.hash]);
+            const traceTransactionResponse = await testerInstance.provider.send('trace_transaction', [trxResponse.hash]);
             console.log(`Test transaction hash: ${trxResponse.hash}`)
-            console.dir(traceTransactionResponse);
-            expect(traceTransactionResponse.length)
+            expect(traceTransactionResponse && traceTransactionResponse?.length)
                 .to.equal(2, "Should have 2 traces, one for the root trx and one for the internal value transfer");
             // TODO: assert value transfer in 2nd trace with correct value/from/to
             const transferCallAction = traceTransactionResponse[1].action;

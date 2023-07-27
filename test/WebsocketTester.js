@@ -5,6 +5,11 @@ const hre = require("hardhat");
 
 describe("Websocket testing", function () {
     let emitterInstance;
+    before(async () => {
+      if(typeof hre.network.config.wsUrl === 'undefined' || hre.network.config.wsUrl === null){
+         throw Error('Websocket not configured. Define the wsUrl properties in hardhat.config.js to enable websocket tests.');
+      }
+    })
     beforeEach(async () => {
         const Emitter = await hre.ethers.getContractFactory("Emitter");
         emitterInstance = await Emitter.deploy();

@@ -8,3 +8,4 @@ package-lock.json
 # python testing stuffs
 .python-version
 **/__pycache__
+/venv

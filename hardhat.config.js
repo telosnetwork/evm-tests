@@ -50,9 +50,9 @@ module.exports = {
       url: "http://127.0.0.1:54106/evm",
       accounts: ['0x87ef69a835f8cd0c44ab99b7609a20b2ca7f1c8470af4f0e5b44db927d542084', 'ee2351ec4614e2eb95ebea649da1bc6b906f780fbb2e8f8b1004326072f2397d'],
     },
-    sepolia: {
-      url: "https://erigon.kainosbp.com",
-      accounts: ['0x87ef69a835f8cd0c44ab99b7609a20b2ca7f1c8470af4f0e5b44db927d542084', 'ee2351ec4614e2eb95ebea649da1bc6b906f780fbb2e8f8b1004326072f2397d'],
+    sepolia:   {
+      url: "http://erigon.kainosbp.com",
+      accounts: ['0x751df3b4bf88a5206d4e827c335aa898ab6c2275d4698534a1bc3d5d6ce48a02', 'ee2351ec4614e2eb95ebea649da1bc6b906f780fbb2e8f8b1004326072f2397d'],
     }
   },
 };

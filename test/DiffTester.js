@@ -60,6 +60,17 @@ const DiffTester = class {
             throw Error(msg);
         }
     }
+    static async getTraces(tester, hash) {
+        
+        let traceTransactionResponse = await tester.provider.send('trace_transaction', [hash]);
+        if(traceTransactionResponse === null){
+            await DiffTester.timeout(true);
+            await DiffTester.timeout(true);
+            traceTransactionResponse = await tester.provider.send('trace_transaction', [hash]);
+        }
+
+        return traceTransactionResponse;
+    }
     static async run(category, test){
         await hre.changeNetwork(ETH_TESTNET_NAME);
         if(!this.eth){
@@ -95,7 +106,7 @@ const DiffTester = class {
     static tests = {
         'storage' : {
             'storageAtSuccess': async function(tester){
-                try {
+                try {   
                     return JSON.stringify(await tester.provider.getStorageAt(address, slot));
                 } catch (e) {
                     console.log("Could not call getStorageAt:", e);
@@ -108,10 +119,21 @@ const DiffTester = class {
                 const valueToSend = hre.ethers.utils.parseEther("0.0000000001");
                 const trxResponse = await tester.estimateGas.testValueTransfer({value: valueToSend});
                 DiffTester.check((trxResponse.value != '0'), 'Gas estimation should return a value');
-                const signer = (chain === ETH_TESTNET_NAME) ? DiffTester.ethAccount : DiffTester.telosAccount;
+                const signer = (chain === ETH_TESTNET_NAME) ? DiffTester.ethAccountEmpty : DiffTester.telosAccountEmpty;
                 const trxResponseEmpty = await tester.connect(signer).estimateGas.testValueTransfer({value: valueToSend});
                 DiffTester.check((trxResponseEmpty.value  != '0'), 'Gas estimation should return a value even if account has no balance');
                 return JSON.stringify({success: true}); // Can't compare results themselves as gas price varies from network to network
+            },
+            'estimationMaxValue': async function(tester, chain){
+                const signer = (chain === ETH_TESTNET_NAME) ? DiffTester.ethAccount : DiffTester.telosAccount;
+                let balance = await tester.provider.eth_getBalance(signer.address);
+                try {
+                    const trxResponse = await tester.connect(signer).estimateGas.testValueTransfer({value: balance});
+                    DiffTester.check((trxResponse.value  != '0'), 'Gas estimation should return a value even if account has no balance');
+                    return JSON.stringify({success: true, response: trxResponse }); 
+                } catch(e){ 
+                    return JSON.stringify({success: false, error: e.message});
+                }
             },
             'estimationRevert': async function(tester, chain) {
                 let reverted = false;
@@ -152,22 +174,13 @@ const DiffTester = class {
             'deploymentSuccess': async function(tester, chain){
                 let trxResponse;
                 try {
-                    trxResponse = await tester.create(1);
+                    trxResponse = await tester. create(1);
                     await DiffTester.timeout(chain);
                 } catch (e) {
                     DiffTester.check(false, e.message);
                 }
 
-                console.log('HEY');
-                let traceTransactionResponse = await tester.provider.send('trace_transaction', [trxResponse.hash]);
-                if(traceTransactionResponse === null){
-                    await DiffTester.timeout(chain);
-                    await DiffTester.timeout(chain);
-                    traceTransactionResponse = await tester.provider.send('trace_transaction', [trxResponse.hash]);
-                }
-                console.log(chain);
-                console.log(traceTransactionResponse);
-                console.log(traceTransactionResponse.length);
+                const traceTransactionResponse = await DiffTester.getTraces(tester, trxResponse.hash);
                 DiffTester.check(traceTransactionResponse.length > 0, "Could not get traces");
                 DiffTester.check(traceTransactionResponse.length === 2, "Must have exactly 2 traces");
                 // Last trace is a create call with code & address in results
@@ -218,12 +231,7 @@ const DiffTester = class {
                     DiffTester.check(false, e.message);
                 }
 
-                let traceTransactionResponse = await tester.provider.send('trace_transaction', [trxResponse.hash]);
-                if(traceTransactionResponse === null){
-                    await DiffTester.timeout(chain);
-                    await DiffTester.timeout(chain);
-                    traceTransactionResponse = await tester.provider.send('trace_transaction', [trxResponse.hash]);
-                }
+                const traceTransactionResponse = await DiffTester.getTraces(tester, trxResponse.hash);
 
                 DiffTester.check(traceTransactionResponse !== null && traceTransactionResponse.length > 0, "Could not get traces");
                 console.log(chain);
@@ -261,7 +269,7 @@ const DiffTester = class {
                     DiffTester.check(false, e.message);
                 }
 
-                const traceTransactionResponse = await tester.provider.send('trace_transaction', [trxResponse.hash]);
+                const traceTransactionResponse = await DiffTester.getTraces(tester, trxResponse.hash);
 
                 DiffTester.check(traceTransactionResponse !== null && traceTransactionResponse.length > 0, "Could not get traces for " + trxResponse.hash);
                 DiffTester.check(traceTransactionResponse[0].subtraces === 1, "Should have 1 subtrace on the root trx");
@@ -296,14 +304,7 @@ const DiffTester = class {
                 DiffTester.check(!reverted, 'Transaction should not have been reverted...');
                 await DiffTester.timeout(chain);
                 await DiffTester.timeout(chain);
-                let traceTransactionResponse = await tester.provider.send('trace_transaction', [trxHash]);
-                if(traceTransactionResponse === null){
-                    await DiffTester.timeout(chain);
-                    await DiffTester.timeout(chain);
-                    traceTransactionResponse = await tester.provider.send('trace_transaction', [trxHash]);
-                }
-                console.log(chain);
-                console.log(traceTransactionResponse);
+                const traceTransactionResponse = await DiffTester.getTraces(tester, trxHash);
                 DiffTester.check(traceTransactionResponse !== null && traceTransactionResponse.length > 0, "Could not get traces for " + trxHash);
                 DiffTester.check(traceTransactionResponse[1].error === 'Reverted', 'Error message should be \'Reverted\' and not \'' + traceTransactionResponse[0].error + '\'...');
                 return JSON.stringify({reverted: reverted})
@@ -322,13 +323,7 @@ const DiffTester = class {
                 DiffTester.check(!reverted, "Transaction should not have been reverted");
 
                 await DiffTester.timeout(chain);
-
-                let traceTransactionResponse = await tester.provider.send('trace_transaction', [trxHash]);
-                if(traceTransactionResponse === null){
-                    await DiffTester.timeout(chain);
-                    await DiffTester.timeout(chain);
-                    traceTransactionResponse = await tester.provider.send('trace_transaction', [trxHash]);
-                }
+                const traceTransactionResponse = await DiffTester.getTraces(tester, trxHash);
                 console.log(chain);
                 console.log(traceTransactionResponse);
 
@@ -351,7 +346,7 @@ const DiffTester = class {
             console.log(chain + ' timeout for ' + TIMEOUT + 'ms')
             await new Promise(resolve => setTimeout(resolve, TIMEOUT));
         }
-        return;
+            return;
     }
 }
 
@@ -394,6 +389,9 @@ describe("RPC Responses", async function () {
     describe(":: Gas Estimation", async function () {
         it("Should estimate gas succesfully", async function() {
             return await DiffTester.run('gas', 'estimationSuccess');
+        });
+        it("Should not let user estimate gas if not enough left for gas", async function() {
+            return await DiffTester.run('gas', 'estimationMaxValue');
         });
         it("Should fail to estimate gas if the contract reverts", async function() {
             return await DiffTester.run('gas', 'estimationRevert');

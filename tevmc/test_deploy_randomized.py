@@ -3,13 +3,15 @@
 import json
 import logging
 
+import pytest
 
-def test_deploy_randomized(tevm_node_random):
-    tevm_node = tevm_node_random
 
-    # dump randomized node info
-    logging.info(
-        json.dumps(tevm_node.config, indent=4))
+MINIMAL = ['nodeos']
+RPC = MINIMAL + ['redis', 'elastic', 'indexer', 'rpc']
+
+@pytest.mark.services(*RPC)
+def test_deploy(tevmc_local):
+    logging.info(json.dumps(tevmc_local.config, indent=4))
 
     # block on python debugger
     # use exit() or Ctrl+D to teardown

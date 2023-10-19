@@ -1,6 +1,5 @@
 pytest
-pdbpp
+pdbplus
 
 asks
-py-leap@git+https://github.com/guilledk/py-leap.git@v0.1a14
-tevmc@git+https://github.com/telosnetwork/telos-evm-docker.git
+tevmc@git+https://github.com/telosnetwork/telos-evm-docker@constant_evm_delta

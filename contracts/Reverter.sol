@@ -7,7 +7,12 @@ contract Reverter {
         require(false, "This is a very big problem!");
     }
 
-    function testValueTransfer(address sender) public payable {
-        payable(sender).transfer(msg.value);
+    function testValueTransfer(address payable sender) public payable {
+        sender.transfer(msg.value);
+    }
+
+    function testGasLeft() public returns (uint gasLeft)  {
+        gasLeft = gasleft();
+        return gasLeft;
     }
 }

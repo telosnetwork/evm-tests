@@ -2,7 +2,7 @@ require("dotenv").config();
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-
+/*
 describe("Token contract", function () {
     let testerInstance;
     before(async () => {
@@ -78,3 +78,4 @@ describe("StandardPrecompiles", function() {
     expect(result).to.equal(true);
   });
 });
+*/

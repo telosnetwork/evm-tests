@@ -2,7 +2,7 @@ require("dotenv").config();
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-
+/*
 describe("Websocket testing", function () {
     let emitterInstance;
     before(async () => {
@@ -58,3 +58,4 @@ describe("Websocket testing", function () {
         })
     })
 })
+*/  

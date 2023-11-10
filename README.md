@@ -9,9 +9,10 @@ Commands used below work on recent Linux or Windows versions but have not been v
 ## INSTALL
 - Install the repository on your machine
 - Enter the directory of the project on your machine and install its dependencies by running `npm install`
+- Modify the hardhat-change-network package src/index.ts, replace '' with '' (TODO: update that package ourselves)
 
 ## TEST
-- Use `npx hardhat test` to build and launch the tests
+- Use `npx hardhat test --network tevmc` to build and launch the tests
 
 
 ## OPTIONAL:

@@ -162,10 +162,6 @@ const DiffTester = class {
                     reverted = true;
                     response = e;
                     DiffTester.check(e.message.startsWith('insufficient funds for intrinsic transaction cost'), 'Wrong error message received')
-                    if(!reverted){
-                        console.log(chain + " catch");
-                        console.log(e.message);
-                    }
                 }
                 return JSON.stringify(response);
             },

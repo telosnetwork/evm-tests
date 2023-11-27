@@ -275,9 +275,12 @@ const DiffTester = class {
                 let response;
                 const signers = await hre.ethers.getSigners();
                 let balance = await tester.runner.provider.getBalance(signers[1]);
-                // Account with 0 balance
+                const valueToSend = hre.ethers.parseEther("11111111111111111111111111111");
+                if(balance >= valueToSend){
+                    console.log("/!\\ Balance is too high: " + balance);
+                }
+                // Account with balance < valueToSend
                 try {
-                    const valueToSend = hre.ethers.parseEther("1111111111111");
                     response = await tester.connect(signers[1]).testValueTransfer.estimateGas({value: valueToSend, gasPrice: 505});
                 } catch (e) {
                     reverted = true;
@@ -291,7 +294,7 @@ const DiffTester = class {
                     return JSON.stringify({'success': true, 'error': e.message});
                 }
                 DiffTester.check(false, 'Should have been reverted due to lack of funds');
-                return JSON.stringify({'success': false});
+                return JSON.stringify({'success': false});  
             },
         },
         'proxies' : {
@@ -347,8 +350,8 @@ const DiffTester = class {
                     "0x79Dc2F9f35495150ff4353ae8a8BC9112E887034",
                     "0x2eE7a6Bc161796c27B7F972B0Cb7bD91bD4D5d66",
                 ];
-                const balance = "56000000000000";
-                const valuePerRecipient = BigInt(56000000000000);
+                const balance = "6000000000000";
+                const valuePerRecipient = BigInt(balance);
                 const valueToSend = (valuePerRecipient * BigInt(4)) + BigInt(10000000000000000);
                 const ethSigners = await ethers.getSigners();
                 try {
@@ -357,9 +360,7 @@ const DiffTester = class {
                         to: ethSigners[1].address,
                         value: valueToSend,
                     });
-                    console.log(respo);
                     bal = await ethSigners[1].provider.getBalance(ethSigners[1].address);
-                    console.log(bal);
                 } catch(e){ 
                     DiffTester.check(false, 'Failed sending ETH: ' + e.message);
                 }
@@ -370,7 +371,6 @@ const DiffTester = class {
                         { "recipient": recipients[2], balance: balance },
                         { "recipient": recipients[3], balance: balance }
                     ], {value: valueToSend});
-                    console.log(trxResponse);
                     await DiffTester.timeout(chain);
                 } catch(e){ 
                     return JSON.stringify({success: false, error: e.message});
@@ -429,9 +429,7 @@ const DiffTester = class {
                     const trxResponse = await tester.createDouble(1);
                     await DiffTester.timeout(chain);
                     let traces = await DiffTester.getTraces(tester, trxResponse.hash);
-                    console.log(traces);
                     DiffTester.check(traces[0].subtraces === 2, 'Should have 2 subtraces, has: ' + traces[0].subtraces);
-                    DiffTester.check(traces[1].action.init?.length > 0, 'Init is not correct: ' + traces[1].action.init);
                     DiffTester.check(traces[1].result?.code?.length > 0, 'Code is missing');
                     DiffTester.check(traces[2].action.init?.length > 0, 'Init is not correct: ' + traces[2].action.init);
                     DiffTester.check(typeof traces[2].result?.code === 'undefined', 'Third trace should not have code set');

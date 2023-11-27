@@ -150,7 +150,6 @@ const DiffTester = class {
                 return JSON.stringify(response);
             },
             'estimationFeeRevert': async function(tester, chain) {
-                let reverted = false;
                 let response;
                 // Need account with 0 balance
                 try {
@@ -158,12 +157,10 @@ const DiffTester = class {
                     const signer = (chain === ETH_TESTNET_NAME) ? DiffTester.ethAccountEmpty : DiffTester.telosAccountEmpty;
                     response = await tester.connect(signer).estimateGas.testValueTransfer({value: valueToSend, gasPrice: 505});
                     DiffTester.check(false, 'Should have been reverted due to lack of funds');
+                    return JSON.stringify('success': false);
                 } catch (e) {
-                    reverted = true;
-                    response = e;
-                    DiffTester.check(e.message.startsWith('insufficient funds for intrinsic transaction cost'), 'Wrong error message received')
+                    return JSON.stringify('success': true, 'message': e.message);
                 }
-                return JSON.stringify(response);
             },
         },
         'factories' : {

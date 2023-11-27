@@ -54,7 +54,6 @@ contract Tester {
     }
 
     function testValueTransfer() public payable {
-        // First send the TLOS back to sender to test internal value transactions
         payable(msg.sender).transfer(msg.value);
     }
 

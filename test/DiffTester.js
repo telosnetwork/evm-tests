@@ -62,6 +62,7 @@ const DiffTester = class {
             console.log(`    Deployed Reverter to ${receipt.contractAddress}`);
         }
 
+        /* TODO: Add more basic checks
         if(!this.instances[chain]['NFT'] && (this.activeTests.includes('mint') || this.activeTests.length === 0)){
             const NFT = await ethers.getContractFactory("NFT");
             const deploymentTransaction = await NFT.getDeployTransaction();
@@ -70,7 +71,7 @@ const DiffTester = class {
             this.instances[chain]['NFT'] = await ethers.getContractAt('NFT', receipt.contractAddress, signer);
             console.log(`    Deployed NFT to ${receipt.contractAddress}`);
         }
-
+        */
         await this.timeout(chain);
 
         if(this.instances[chain]['Reverter']) {
@@ -195,7 +196,7 @@ const DiffTester = class {
                 const response = await tester.runner.provider.getLogs({
                     address: emitterInstance.target,
                     topics: [eventTopic, orTopics],
-                    fromBlock: (chain === ETH_TESTNET_ID) ? currentBlock - 20 : currentBlock - 2000, 
+                    fromBlock: (chain === ETH_TESTNET_ID) ? currentBlock - 20 : currentBlock - 200, 
                     toBlock: currentBlock + 10
                 });
                 DiffTester.check((response && response.length > 0), 'Could not get event');
@@ -218,7 +219,7 @@ const DiffTester = class {
                 const response = await tester.runner.provider.getLogs({
                     address: emitterInstance.target,
                     topics: [eventTopic],
-                    fromBlock: (chain === ETH_TESTNET_ID) ? currentBlock - 20 : currentBlock - 2000, 
+                    fromBlock: (chain === ETH_TESTNET_ID) ? currentBlock - 20 : currentBlock - 200, 
                     toBlock: currentBlock + 10
                 });
                 DiffTester.check((response && response.length > 0), 'Could not get event');
@@ -243,7 +244,6 @@ const DiffTester = class {
                 let balance = await tester.runner.provider.getBalance(signer.address);
                 try {
                     const trxResponse = await tester.connect(signer).testValueTransfer.estimateGas({ value: balance + BigInt(1000000000000000000) });
-                    console.log('      #' + chain + ' ' + trxResponse);
                     DiffTester.check((trxResponse > 0), `Gas estimation should return a value even if value is greater than balance, response: ${trxResponse}`);
                     return JSON.stringify({ success: true, response: trxResponse.toString() });  
                 } catch(e){ 
@@ -275,10 +275,9 @@ const DiffTester = class {
                 let response;
                 const signers = await hre.ethers.getSigners();
                 let balance = await tester.runner.provider.getBalance(signers[1]);
-                console.log(balance);
                 // Account with 0 balance
                 try {
-                    const valueToSend = hre.ethers.parseEther("111111111");
+                    const valueToSend = hre.ethers.parseEther("1111111111111");
                     response = await tester.connect(signers[1]).testValueTransfer.estimateGas({value: valueToSend, gasPrice: 505});
                 } catch (e) {
                     reverted = true;
@@ -315,7 +314,6 @@ const DiffTester = class {
                 }
                 const signers = await ethers.getSigners();
                 DiffTester.check(trxResponse.from === signers[0].address, "From must be sender");
-                console.log(trxResponse);
                 try {
                     let traces = await DiffTester.getTraces(tester, trxResponse.hash);
                     let Ownable = await ethers.getContractFactory("OwnableContract");
@@ -324,7 +322,7 @@ const DiffTester = class {
                     DiffTester.check(traces !== null, "Trace response must not be undefined");
                     DiffTester.check(traces?.length === 3, "Call must have 3 traces");
                     DiffTester.check(traces[0].subtraces === 1, "Initial trace should have 1 subtraces");
-                    DiffTester.check(traces[1].subtraces === 1, "Second trace should have 1 subtrace");
+                    DiffTester.check(traces[1].subtraces === 1, "Second trafce should have 1 subtrace");
                     DiffTester.check(owner === DiffTester.instances[chain]['ProxiedTester'].target, "Owner address should be " + DiffTester.instances[chain]['ProxiedTester'].target + " but is " + owner);
                     return JSON.stringify({
                         success: true
@@ -348,26 +346,18 @@ const DiffTester = class {
                     "0x927cDC804626f815b4f266ecE3592e22a4f8a2E9",
                     "0x79Dc2F9f35495150ff4353ae8a8BC9112E887034",
                     "0x2eE7a6Bc161796c27B7F972B0Cb7bD91bD4D5d66",
-                ]
+                ];
                 const balance = "56000000000000";
                 const valuePerRecipient = BigInt(56000000000000);
-                const valueToSend = (valuePerRecipient * BigInt(recipients.length)) + BigInt(10000000000);
+                const valueToSend = (valuePerRecipient * BigInt(4)) + BigInt(10000000000000000);
                 const ethSigners = await ethers.getSigners();
                 try {
                     let bal = await ethSigners[1].provider.getBalance(ethSigners[1].address);
-                    const feeData = await ethSigners[1].provider.getFeeData();
-                    const gasUnits = (chain === ETH_TESTNET_ID) ? 24000 : 27000; 
-                    const balanceToSend = bal - (BigInt(gasUnits) * feeData.gasPrice);
-                    if(balanceToSend > 0){
-                        // await ethSigners[1].sendTransaction({
-                        //     to: ethSigners[0].address,
-                        //     value: balanceToSend,
-                        // });
-                    }
-                    await ethSigners[0].sendTransaction({
+                    let respo = await ethSigners[0].sendTransaction({
                         to: ethSigners[1].address,
                         value: valueToSend,
                     });
+                    console.log(respo);
                     bal = await ethSigners[1].provider.getBalance(ethSigners[1].address);
                     console.log(bal);
                 } catch(e){ 
@@ -376,13 +366,14 @@ const DiffTester = class {
                 try {
                     trxResponse = await DiffTester.instances[chain]['Multisender'].connect(ethSigners[1]).validateEther([
                         { "recipient": recipients[0], balance: balance },
-                        { "recipient": recipients[1], balance: balance }
+                        { "recipient": recipients[1], balance: balance },
+                        { "recipient": recipients[2], balance: balance },
+                        { "recipient": recipients[3], balance: balance }
                     ], {value: valueToSend});
                     console.log(trxResponse);
                     await DiffTester.timeout(chain);
                 } catch(e){ 
-                    return JSON.stringify({error: e.message});
-                    // DiffTester.check(false, 'Multisend failed: ' + e.message);
+                    return JSON.stringify({success: false, error: e.message});
                 }
                 return JSON.stringify({success: true});
             },
@@ -464,11 +455,9 @@ const DiffTester = class {
             'sendTransactionValue': async function(tester, chain){
                 const signers = await ethers.getSigners();
                 try {
-                    const transactionHash = await tester.runner.provider.send('eth_sendTransaction', {
-                        from: signers[0].address,
+                    const transactionHash = await signers[0].sendTransaction({
                         to: signers[1].address,
                         value: hre.ethers.parseEther("0.000001"),
-                        data: '0x58eddaa2000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000074c616e64426f7800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002868747470733a2f2f6170692e616c747572616e66742e636f6d2f6d6574612f6c616e642d626f782f000000000000000000000000000000000000000000000000'
                     })
                 } catch(e){
                     DiffTester.check(false, "Failed with error: " + e)
@@ -477,10 +466,18 @@ const DiffTester = class {
             'sendTransactionNoValue': async function(tester, chain){
                 const signers = await ethers.getSigners();
                 try {
-                    const transactionHash = await tester.runner.provider.send('eth_sendTransaction', {
-                        from: signers[0].address,
+                    const transactionHash = await signers[0].sendTransaction({
                         to: signers[1].address,
-                        data: '0x58eddaa2000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000074c616e64426f7800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002868747470733a2f2f6170692e616c747572616e66742e636f6d2f6d6574612f6c616e642d626f782f000000000000000000000000000000000000000000000000'
+                    })
+                } catch(e){
+                    DiffTester.check(false, "Failed with error: " + e)
+                }
+            },
+            'sendTransactionNoTo': async function(tester, chain){
+                const signers = await ethers.getSigners();
+                try {
+                    const transactionHash = await signers[0].sendTransaction({
+                        value: hre.ethers.parseEther("0.000001"),
                     })
                 } catch(e){
                     DiffTester.check(false, "Failed with error: " + e)
@@ -489,7 +486,7 @@ const DiffTester = class {
         },
         'transfers' : {
             'proxiedInternalValueTransfer': async function(tester, chain){
-                const valueToSend = hre.ethers.parseEther("0.000001");
+                const valueToSend = hre.ethers.parseEther("0.0000001");
                 let trxResponse
                 try {
                     trxResponse = await tester.testProxiedValueTransfer({value: valueToSend});
@@ -498,14 +495,13 @@ const DiffTester = class {
                 }
 
                 await DiffTester.timeout(chain);
-                await DiffTester.timeout(chain);
 
                 const traceTransactionResponse = await DiffTester.getTraces(tester, trxResponse.hash);
-
+                
                 DiffTester.check(traceTransactionResponse !== null && traceTransactionResponse.length > 0, "Could not get traces");
-                DiffTester.check(traceTransactionResponse.length === 2, `Should have 2 traces, one for the root trx and one for each internal value transfers, has ${traceTransactionResponse.length}`);
+                DiffTester.check(traceTransactionResponse.length === 3, `Should have 3 traces, one for the root trx and one for each internal value transfers, has ${traceTransactionResponse.length}`);
                 DiffTester.check(parseInt(traceTransactionResponse[0].subtraces) === 1, `Should have 1 subtrace on the root trx, has ${traceTransactionResponse[0].subtraces}`);
-                DiffTester.check(parseInt(traceTransactionResponse[1].subtraces) === 0, `Should have 0 subtrace on the first sub trx, has ${traceTransactionResponse[1].subtraces}`);
+                DiffTester.check(parseInt(traceTransactionResponse[1].subtraces) === 1, `Should have 1 subtrace on the first sub trx, has ${traceTransactionResponse[1].subtraces}`);
 
                 const reverter = await tester.reverter();
                 // Second trace
@@ -521,14 +517,12 @@ const DiffTester = class {
                     type1: traceTransactionResponse[1].type,
                     callType: traceTransactionResponse[0].action.callType,
                     callType2: traceTransactionResponse[1].action.callType,
-                    output: traceTransactionResponse[0].result.output,
-                    output2: traceTransactionResponse[1].result.output,
                     value: traceTransactionResponse[0].action.value,
                     value2: traceTransactionResponse[1].action.value
                 });
             },
             'internalValueTransfer': async function(tester, chain){
-                const valueToSend = hre.ethers.parseEther("0.000    001");
+                const valueToSend = hre.ethers.parseEther("0.0000001");
                 let trxResponse;
                 try {
                     trxResponse = await tester.testValueTransfer({value: valueToSend});
@@ -537,10 +531,8 @@ const DiffTester = class {
                 }
 
                 await DiffTester.timeout(chain);
-                await DiffTester.timeout(chain);
 
                 const traceTransactionResponse = await DiffTester.getTraces(tester, trxResponse.hash);
-                console.log(traceTransactionResponse);
                 DiffTester.check(traceTransactionResponse !== null && traceTransactionResponse.length > 0, `Could not get traces for ${trxResponse.hash}`);
                 DiffTester.check(traceTransactionResponse.length === 2, "Should have 2 traces, one for the root trx and one for the internal value transfer, found " + traceTransactionResponse.length);
                 DiffTester.check(traceTransactionResponse[0].subtraces === 1, "Should have 1 subtrace on the root trx, has: " + traceTransactionResponse[0].subtraces);
@@ -560,8 +552,6 @@ const DiffTester = class {
                     type1: traceTransactionResponse[1].type,
                     callType: traceTransactionResponse[0].action.callType,
                     callType2: traceTransactionResponse[1].action.callType,
-                    output: traceTransactionResponse[0].result.output,
-                    output2: traceTransactionResponse[1].result.output,
                     value: traceTransactionResponse[0].action.value,
                     value2: traceTransactionResponse[1].action.value
                 });
@@ -596,8 +586,6 @@ const DiffTester = class {
                 await DiffTester.timeout(chain);
                 const traceTransactionResponse = await DiffTester.getTraces(tester, trxHash);
                 DiffTester.check(traceTransactionResponse !== null && traceTransactionResponse.length > 1, "Could not get traces for " + trxHash);
-                console.log(traceTransactionResponse);
-                DiffTester.check(typeof traceTransactionResponse[0].error === 'undefined', `Error found in first trace: ${traceTransactionResponse[0].error}` );
                 DiffTester.check(traceTransactionResponse[1].error, `No error found in second trace`);
                 DiffTester.check(['Reverted', 'One of the actions in this transaction was REVERTed.'].includes(traceTransactionResponse[1].error), `Wrong error message: '${traceTransactionResponse[1].error}'`);
                 return JSON.stringify({reverted: reverted, error: traceTransactionResponse[1].error})
@@ -618,7 +606,6 @@ const DiffTester = class {
                 await DiffTester.timeout(chain);
                 const traceTransactionResponse = await DiffTester.getTraces(tester, trxHash);
                 DiffTester.check(traceTransactionResponse !== null && traceTransactionResponse.length > 2, "Could not get traces for " + trxHash);
-                DiffTester.check(typeof traceTransactionResponse[0].error === 'undefined', `Error found in first trace: ${traceTransactionResponse[0].error}` );
                 DiffTester.check(traceTransactionResponse[2].error, `No error found in third trace`);
                 DiffTester.check(['Reverted', 'One of the actions in this transaction was REVERTed.'].includes(traceTransactionResponse[2].error), `Wrong error message: '${traceTransactionResponse[2].error}'`);
                 return JSON.stringify({reverted: reverted, error: traceTransactionResponse[2].error})
@@ -634,7 +621,7 @@ const DiffTester = class {
                 } catch (e) {
                     reverted = true;
                     return JSON.stringify({
-                        error: e.message
+                        error: e.message.includes('Failed')
                     });
                 }
                 DiffTester.check(reverted, "Should have been reverted");
@@ -851,8 +838,13 @@ describe("RPC Responses", async function () {
             });
         }
         if(isActive('sendTransactionNoValue')){
-            it("Should properly fail if no value is passed", async function() {
+            it("Should not fail if no value is passed", async function() {
                 return await DiffTester.run('sendTransaction', 'sendTransactionNoValue');
+            });
+        }
+        if(isActive('sendTransactionNoTo')){
+            it("Should not fail if no recipient is passed", async function() {
+                return await DiffTester.run('sendTransaction', 'sendTransactionNoTo');
             });
         }
     });

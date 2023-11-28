@@ -44,7 +44,7 @@ module.exports = {
         balance: '10000000000000000000000'
       }],
     },
-    localhost: {
+    ganache: {
       url: "http://127.0.0.1:8545",
       accounts: ['0x87ef69a835f8cd0c44ab99b7609a20b2ca7f1c8470af4f0e5b44db927d542084', 'ee2351ec4614e2eb95ebea649da1bc6b906f780fbb2e8f8b1004326072f2397d'],
     },
@@ -52,7 +52,7 @@ module.exports = {
       url: "https://testnet.telos.net/evm",
       accounts: ['0x87ef69a835f8cd0c44ab99b7609a20b2ca7f1c8470af4f0e5b44db927d542084', 'ee2351ec4614e2eb95ebea649da1bc6b906f780fbb2e8f8b1004326072f2397d'],
     },
-    tevmc: {
+    tEVM: {
       url: "http://127.0.0.1:7000/evm",
       wsUrl: "ws://127.0.0.1:7000/evm",
       accounts: ['0x87ef69a835f8cd0c44ab99b7609a20b2ca7f1c8470af4f0e5b44db927d542084', 'ee2351ec4614e2eb95ebea649da1bc6b906f780fbb2e8f8b1004326072f2397d', 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'],

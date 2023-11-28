@@ -22,7 +22,7 @@ contract Tester {
         (bool success, bytes memory returndata) = address(reverter).call(abi.encodeWithSignature('testGasLeft()'));
     }
 
-    function testGasLeft() public returns (uint gasLeft)  {
+    function testGasLeft() public view returns (uint gasLeft)  {
         gasLeft = gasleft();
     }
 
@@ -46,6 +46,10 @@ contract Tester {
 
     function testProxiedValueTransfer() public payable {
         Reverter(reverter).testValueTransfer{ value: msg.value }(payable(msg.sender));
+    }
+
+    function panic() public pure {
+        assert(false);
     }
 
     function testUserValueTransfer() public payable {

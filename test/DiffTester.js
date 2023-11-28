@@ -19,6 +19,7 @@ const DiffTester = class {
     static ethAccount;
     static ethAccountEmpty;
     static eth = true;
+    static debug = false;
 
     static async deployTo(chain, signer){
         if(!this.instances[chain]){
@@ -29,7 +30,7 @@ const DiffTester = class {
         console.log(`    Deploying contracts to ${hre.network.name} (#${chain})...`);
 
         await this.timeout(chain);
-        if(!this.instances[chain]['StoreTester'] && (this.activeTests.includes('storageMissing') || this.activeTests.includes('storageSuccess') || this.activeTests.length === 0)){
+        if(!this.instances[chain]['StoreTester'] && (this.isActive('storageMissing') || this.isActive('storageSuccess'))){
             const StoreTester = await ethers.getContractFactory("StoreTester");
             const deploymentTransaction = await StoreTester.getDeployTransaction();
             const deploymentResponse = await signer.sendTransaction(deploymentTransaction);
@@ -37,7 +38,7 @@ const DiffTester = class {
             this.instances[chain]['StoreTester'] = await ethers.getContractAt('StoreTester', receipt.contractAddress, signer);
             console.log('    Deployed StoreTester to', receipt.contractAddress);
         }
-        if(!this.instances[chain]['Multisender'] && (this.activeTests.includes('multisend') || this.activeTests.length === 0)){
+        if(!this.instances[chain]['Multisender'] && this.isActive('multisend')){
             const Multisender = await ethers.getContractFactory("Multisender");
             const deploymentTransaction = await Multisender.getDeployTransaction();
             const deploymentResponse = await signer.sendTransaction(deploymentTransaction);
@@ -45,7 +46,7 @@ const DiffTester = class {
             this.instances[chain]['Multisender'] = await ethers.getContractAt('Multisender', receipt.contractAddress, signer);
             console.log('    Deployed Multisender to', receipt.contractAddress);
         }
-        if(!this.instances[chain]['Emitter']  && (this.activeTests.includes('getLogsSimpleFilter') || this.activeTests.includes('getLogsAdvancedFilter') || this.activeTests.length === 0)){
+        if(!this.instances[chain]['Emitter']  && (this.isActive('getLogsSimpleFilter') || this.isActive('getLogsAdvancedFilter'))){
             const Emitter = await ethers.getContractFactory("Emitter");
             const deploymentTransaction = await Emitter.getDeployTransaction();
             const deploymentResponse = await signer.sendTransaction(deploymentTransaction);
@@ -72,7 +73,7 @@ const DiffTester = class {
             console.log(`    Deployed NFT to ${receipt.contractAddress}`);
         }
         */
-        await this.timeout(chain);
+        await this.timeout(chain, 'Waiting on contract deployment');
 
         if(this.instances[chain]['Reverter']) {
             const Tester = await ethers.getContractFactory("Tester");
@@ -80,11 +81,11 @@ const DiffTester = class {
             const deploymentResponse = await signer.sendTransaction(deploymentTransaction);
             const receipt = await deploymentResponse.wait();
             this.instances[chain]['Tester'] = await ethers.getContractAt('Tester', receipt.contractAddress, signer);
-            await this.timeout(chain);
+            await this.timeout(chain, 'Waiting on contract deployment');
             console.log(`    Deployed Tester to ${receipt.contractAddress}`);
             await this.instances[chain]['Tester'].setReverter(this.instances[chain]['Reverter'].target);
             console.log(`    Configured Tester`);
-            if((this.activeTests.includes('callSuccess') || this.activeTests.includes('createProxied')) || this.activeTests.length === 0 ){
+            if(this.isActive('callSuccess') || this.isActive('createProxied')){
                 const ProxiedTester = await ethers.getContractFactory("Tester")
                 try {
                     this.instances[chain]['ProxiedTester'] = await upgrades.deployProxy(ProxiedTester, [this.instances[chain]['Reverter'].target], { initializer:'setReverter' });
@@ -108,6 +109,9 @@ const DiffTester = class {
         console.log(`    ${balance} \n`);
         return true;
     }
+    static isActive(test){
+        return (activeTests.length === 0 || activeTests.includes(test)) 
+    }
     static check(test, msg){
         if(!test){
             throw Error(msg);
@@ -116,8 +120,9 @@ const DiffTester = class {
     static async getTraces(tester, hash) {
         let traceTransactionResponse = await tester.runner.provider.send('trace_transaction', [hash]);
         if(traceTransactionResponse === null){
-            await DiffTester.timeout(true);
-            await DiffTester.timeout(true);
+            // Wait 1 ETH block (20s)
+            await DiffTester.timeout(true, 'Waiting on traces');
+            await DiffTester.timeout(true, 'Waiting on traces');
             traceTransactionResponse = await tester.runner.provider.send('trace_transaction', [hash]);
         }
 
@@ -144,7 +149,7 @@ const DiffTester = class {
                     diffMsg += "    ================ Diff ================\n";
                     diffMsg += "    " + ETH_TESTNET_NAME + ":\n";
                     diffMsg += "    " + resultsEth + "\n";
-                    diffMsg += "    telos:\n";
+                    diffMsg += "    tEVM:\n";
                     diffMsg += "    " + resultsTelos + ":\n";
                     this.check(false, diffMsg);
 
@@ -187,8 +192,8 @@ const DiffTester = class {
                 const emitterInstance = DiffTester.instances[chain]['Emitter'];
                 await emitterInstance.emitThirdEvent(tester.target);
                 await emitterInstance.emitThirdEvent('0x0000000000000000000000000000000000000000');
-                await DiffTester.timeout(true);
-                await DiffTester.timeout(true);
+                await DiffTester.timeout(true, 'Waiting on event');
+                await DiffTester.timeout(true, 'Waiting on event');
                 const currentBlock = await tester.runner.provider.getBlockNumber();
                 const eventSignature = 'Third(address,address,uint256)';
                 const eventTopic = ethers.id(eventSignature);
@@ -211,8 +216,8 @@ const DiffTester = class {
                 const emitterInstance = DiffTester.instances[chain]['Emitter'];
                 const emitResponse  = await emitterInstance.emitTwoEvents();
                 DiffTester.check(emitResponse.data === '0x7216c333', 'Data returned by Emitter is not correct');
-                await DiffTester.timeout(true);
-                await DiffTester.timeout(true);
+                await DiffTester.timeout(true, 'Waiting on event');
+                await DiffTester.timeout(true, 'Waiting on event');
                 const currentBlock = await tester.runner.provider.getBlockNumber();
                 const eventSignature = 'First(uint256)';
                 const eventTopic = ethers.id(eventSignature);
@@ -247,7 +252,9 @@ const DiffTester = class {
                     DiffTester.check((trxResponse > 0), `Gas estimation should return a value even if value is greater than balance, response: ${trxResponse}`);
                     return JSON.stringify({ success: true, response: trxResponse.toString() });  
                 } catch(e){ 
-                    console.log(e);
+                    if(DiffTester.debug){
+                        console.log(e);
+                    }
                     DiffTester.check(false, 'Gas estimation should return a value even if value is greater than balance, error instead: ' + e.message);
                 }
             },
@@ -298,10 +305,9 @@ const DiffTester = class {
             },
         },
         'proxies' : {
-            'callSuccess': async function(tester, chain){
+            'callSuccess': async function(){
                 try {
-                    let trxResponse = await DiffTester.instances[ProxiedTester].testGasLeft();
-                    await DiffTester.timeout(chain);
+                    await DiffTester.instances[ProxiedTester].testGasLeft();
                 } catch (e) {
                     DiffTester.check(false, e.message);
                     return;
@@ -352,15 +358,21 @@ const DiffTester = class {
                 ];
                 const balance = "6000000000000";
                 const valuePerRecipient = BigInt(balance);
-                const valueToSend = (valuePerRecipient * BigInt(4)) + BigInt(10000000000000000);
+                const valueToSend = (valuePerRecipient * BigInt(4)) + BigInt(1000000000000000000);
                 const ethSigners = await ethers.getSigners();
                 try {
-                    let bal = await ethSigners[1].provider.getBalance(ethSigners[1].address);
-                    let respo = await ethSigners[0].sendTransaction({
+                    if(DiffTester.debug){
+                        let bal = await ethSigners[1].provider.getBalance(ethSigners[1].address);
+                        console.log("       Chain #" + chain + ": balance before transfer is " + bal);
+                    }
+                    await ethSigners[0].sendTransaction({
                         to: ethSigners[1].address,
                         value: valueToSend,
                     });
-                    bal = await ethSigners[1].provider.getBalance(ethSigners[1].address);
+                    if(DiffTester.debug){
+                        let bal = await ethSigners[1].provider.getBalance(ethSigners[1].address);
+                        console.log("       Chain #" + chain + ": balance after transfer is " + bal);
+                    }
                 } catch(e){ 
                     DiffTester.check(false, 'Failed sending ETH: ' + e.message);
                 }
@@ -371,9 +383,18 @@ const DiffTester = class {
                         { "recipient": recipients[2], balance: balance },
                         { "recipient": recipients[3], balance: balance }
                     ], {value: valueToSend});
-                    await DiffTester.timeout(chain);
+                    if(DiffTester.debug){
+                        let bal = await ethSigners[1].provider.getBalance(ethSigners[1].address);
+                        console.log("       Chain #" + chain + ": balance after call is " + bal);
+                    }
                 } catch(e){ 
+                    if(DiffTester.debug){
+                        console.log(e);
+                    }
                     return JSON.stringify({success: false, error: e.message});
+                }
+                if(DiffTester.debug){
+                    console.log(trxResponse);
                 }
                 return JSON.stringify({success: true});
             },
@@ -567,6 +588,36 @@ const DiffTester = class {
                 DiffTester.check(response === "0x", "Response should be 0x, got: " + response);
             },
         },
+        'errors' : {
+            'panic': async function(tester, chain){
+                try {
+                    await tester.panic({gasLimit: 80000});
+                    DiffTester.check(false, "Should have been reverted");
+                } catch (e) {
+                    return JSON.stringify({
+                        success: true,
+                        message: (e.message.length > 0)
+                    });
+                }
+                return JSON.stringify({
+                    success: false,
+                });
+            },
+            'revertNoReason': async function(tester, chain){
+                let reverter = DiffTester.instances[chain]['Reverter'];
+                try {
+                    await reverter.revertNoReason();
+                    DiffTester.check(false, "Should have been reverted");
+                } catch (e) {
+                    return JSON.stringify({
+                        success: false
+                    });
+                }
+                return JSON.stringify({
+                    success: true
+                });
+            },
+        },
         'traces' : {
             'nonRevertTrace': async function(tester, chain){
                 let trxResponse;
@@ -610,14 +661,9 @@ const DiffTester = class {
             },
             'revertTrace': async function(tester, chain){
                 let reverted = false;
-                let trxResponse;
-                let trxHash;
                 try {
-                    trxResponse = await tester.testCallRevert({gasLimit: 80000});
-                    trxHash = trxResponse.hash;
-                    console.log(trxResponse);
+                    await tester.testCallRevert({gasLimit: 80000});
                 } catch (e) {
-                    reverted = true;
                     return JSON.stringify({
                         error: e.message.includes('Failed')
                     });
@@ -631,7 +677,10 @@ const DiffTester = class {
                     trxResponse = await tester.testCallRevert2({gasLimit: 80000});
                     trxHash = trxResponse.hash
                 } catch (e) {
-                    DiffTester.check(false, e);
+                    trxHash = e.data.txHash;
+                    if(DiffTester.debug){
+                        console.log("       Chain #" + chain + ": error thrown by RPC \n      " + e.message);
+                    }
                 }
 
                 await DiffTester.timeout(chain);
@@ -650,12 +699,15 @@ const DiffTester = class {
                     trace2_output: traceTransactionResponse[1].result?.output,
                     trace2_error: (traceTransactionResponse[1].error) ? true : false,
                 });
-            }
+            },
         }
     };
-    static async timeout(chain){
+    static async timeout(chain, reason){
         if(chain && chain !== 'tevmc' && parseInt(chain) !== TELOS_TESTNET_ID){
-            // console.log('    ' + chain + ' timeout for ' + TIMEOUT + 'ms')
+            reason = (reason && reason.length > 0) ? ': ' + reason : '';
+            if(DiffTester.debug){
+                console.log('     Chain #' + chain + ': timeout for ' + TIMEOUT + 'ms' + reason)
+            }
             await new Promise(resolve => setTimeout(resolve, TIMEOUT));
         }
             return;
@@ -700,14 +752,11 @@ describe("RPC Responses", async function () {
 });
 */
 describe("RPC Responses", async function () {
-    const isActive = function(test){
-        const activeTests = process.env.TESTS?.split(',') || [];
-        return (activeTests.length === 0 || activeTests.includes(test)) 
-    }
     beforeEach(async () => {
         await hre.changeNetwork(network.name);
     })
     before(async () => {
+        DiffTester.debug = process.env.DEBUG || false;
         DiffTester.activeTests = process.env.TESTS?.split(',') || [];
         if(ETH_TESTNET_ID === null || ETH_TESTNET_NAME === null){
             throw Error('No ETH Testnet network specified. Please define ETH_TESTNET_ID & ETH_TESTNET_NAME in the .env file to run the tests.')
@@ -740,54 +789,54 @@ describe("RPC Responses", async function () {
         console.log(`\n`);
     })
     describe(":: Storage", async function () {
-        if(isActive('storageSuccess')){
+        if(DiffTester.isActive('storageSuccess')){
             it("Should return correct value from storage", async function() {
                 return await DiffTester.run('storage', 'storageSuccess');
             });
         }
-        if(isActive('storageMissing')){
+        if(DiffTester.isActive('storageMissing')){
             it("Should return correct value from missing storage", async function() {
                 return await DiffTester.run('storage', 'storageMissing');
             });
         }
-        if(isActive('getLogsSimpleFilter')){
+        if(DiffTester.isActive('getLogsSimpleFilter')){
             it("Should correctly filter logs using a simple filter", async function() {
                 return await DiffTester.run('storage', 'getLogsSimpleFilter');
             });
         }
-        if(isActive('getLogsAdvancedFilter')){
+        if(DiffTester.isActive('getLogsAdvancedFilter')){
             it("Should correctly filter logs using an advanced filter", async function() {
                 return await DiffTester.run('storage', 'getLogsAdvancedFilter');
             });
         }
-        if(isActive('emptyCode')){
+        if(DiffTester.isActive('emptyCode')){
             it("Should correctly return 0x if address has no code", async function() {
                 return await DiffTester.run('code', 'emptyCode');
             });
         }
     });
     describe(":: Gas Estimation", async function () {
-        if(isActive('estimationSuccess')){
+        if(DiffTester.isActive('estimationSuccess')){
             it("Should estimate gas succesfully", async function() {
                 return await DiffTester.run('gas', 'estimationSuccess');
             });
         }
-        if(isActive('estimationMaxValue')){
+        if(DiffTester.isActive('estimationMaxValue')){
             it("Should let user estimate gas even if value does not leave enough for gas on transaction (Tangem)", async function() {
                 return await DiffTester.run('gas', 'estimationMaxValue');
             });
         }
-        if(isActive('estimationOverValue')){
+        if(DiffTester.isActive('estimationOverValue')){
             it("Should let user estimate gas even if value is greater than balance", async function() {
             return await DiffTester.run('gas', 'estimationOverValue');
             });
         }
-        if(isActive('estimationRevert')){
+        if(DiffTester.isActive('estimationRevert')){
             it("Should fail to estimate gas if the contract reverts", async function() {
                 return await DiffTester.run('gas', 'estimationRevert');
             });
         }
-        if(isActive('estimationFeeRevert')){
+        if(DiffTester.isActive('estimationFeeRevert')){
             it("Should fail to estimate gas if a fee parameter is passed but account does not have funds", async function() {
                 return await DiffTester.run('gas', 'estimationFeeRevert');
             });
@@ -795,74 +844,87 @@ describe("RPC Responses", async function () {
     });
 
     describe(":: Transfers", async function () {
-        if(isActive('internalValueTransfer')){
+        if(DiffTester.isActive('internalValueTransfer')){
             it("Should transfer value using one internal transaction", async function() {
                 return await DiffTester.run('transfers', 'internalValueTransfer');
             })
         }
-        if(isActive('proxiedInternalValueTransfer')){
+        if(DiffTester.isActive('proxiedInternalValueTransfer')){
             it("Should transfer value using two internal transactions with a proxy", async function() {
                 return await DiffTester.run('transfers', 'proxiedInternalValueTransfer');
             })
         }
     });
 
+    describe(":: Errors", async function () {
+        if(DiffTester.isActive('panic')){
+            it("Should throw a provider error on panic", async function () {
+                return await DiffTester.run('errors', 'panic');
+            });
+        }
+        if(DiffTester.isActive('revertNoReason')){
+            it("Should throw a provider error on a no reason revert", async function () {
+                return await DiffTester.run('errors', 'revertNoReason');
+            });
+        }
+    });
+
     describe(":: Traces", async function () {
-        if(isActive('nonRevertTrace2')){
+        if(DiffTester.isActive('nonRevertTrace2')){
             it("Should reflect an internal revert in 1 traces out of 2", async function () {
                 return await DiffTester.run('traces', 'nonRevertTrace2');
             });
         }
-        if(isActive('nonRevertTrace')){
+        if(DiffTester.isActive('nonRevertTrace')){
             it("Should reflect an internal revert in 1 trace out of 1", async function () {
                 return await DiffTester.run('traces', 'nonRevertTrace');
             });
         }
-        if(isActive('revertTrace')){
+        if(DiffTester.isActive('revertTrace')){
             it("Should reflect revert in call on a trace", async function () {
                 return await DiffTester.run('traces', 'revertTrace');
             });
         }
-        if(isActive('revertTrace2')){
+        if(DiffTester.isActive('revertTrace2')){
             it("Should reflect revert in call AND internal transaction on a trace", async function () {
                 return await DiffTester.run('traces', 'revertTrace2');
             });
         }
     });
     describe(":: sendTransaction", async function () {
-        if(isActive('sendTransactionValue')){
+        if(DiffTester.isActive('sendTransactionValue')){
             it("Should not fail if proper parameters are passed", async function() {
                 return await DiffTester.run('sendTransaction', 'sendTransactionValue');
             });
         }
-        if(isActive('sendTransactionNoValue')){
+        if(DiffTester.isActive('sendTransactionNoValue')){
             it("Should not fail if no value is passed", async function() {
                 return await DiffTester.run('sendTransaction', 'sendTransactionNoValue');
             });
         }
-        if(isActive('sendTransactionNoTo')){
+        if(DiffTester.isActive('sendTransactionNoTo')){
             it("Should not fail if no recipient is passed", async function() {
                 return await DiffTester.run('sendTransaction', 'sendTransactionNoTo');
             });
         }
     });
     describe(":: Factories", async function () {
-        if(isActive('multisend')){
+        if(DiffTester.isActive('multisend')){
             it("Should be able to call a contract function through proxy (Multisend)", async function() {
                 return await DiffTester.run('proxies', 'multisend');
             });
         }
-        if(isActive('create')){
+        if(DiffTester.isActive('create')){
             it("Should deploy contract successfully from factory", async function() {
                 return await DiffTester.run('factories', 'create');
             });
         }
-        if(isActive('createProxied')){
+        if(DiffTester.isActive('createProxied')){
             it("Should deploy contract successfully from proxied factory", async function() {
                 return await DiffTester.run('proxies', 'createProxied');
             });
         }
-        if(isActive('createCollision')){
+        if(DiffTester.isActive('createCollision')){
             it("Should error if factory contract creations collides", async function() {
                 return await DiffTester.run('factories', 'createCollision');
             });
